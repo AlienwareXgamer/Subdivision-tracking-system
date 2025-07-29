@@ -1,0 +1,33 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "qr_scan_logs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "qrCodeCreator",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "scanTime",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "qr_scan_logs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "scanData",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "scanTime",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

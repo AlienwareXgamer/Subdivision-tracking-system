@@ -1,0 +1,117 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Allow authenticated users to read their own data
+    match /users/{userId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+
+      // Admins have full access to the users collection
+      allow read, create, update, delete: if request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+
+      // Allow security role to read data in the users collection
+      allow read: if request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'security';
+    }
+
+    // Additional rules for other collections, e.g., 'residents'
+    match /residents/{residentId} {
+      allow read: if request.auth != null;
+      allow update: if request.auth != null && 
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    match /guest_qrcodes/{qrCodeId} {
+
+  		// Allow creation for residents, security, and admins
+  		allow create: if request.auth != null && (
+    		get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'resident' ||
+    		get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'security' ||
+    		get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+  		);
+
+  		// Allow read for the QR code creator, security, and admins
+  		allow read: if request.auth != null && (
+    		(resource.data.createdBy == request.auth.token.email &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'resident') ||
+    		get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'security' ||
+    		get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+  		);
+
+  		// Allow update for the QR code creator (if they are a resident or security) and admins
+  		allow update: if request.auth != null && (
+    		(resource.data.createdBy == request.auth.token.email &&
+    		(get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'resident' ||
+     		get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'security')) ||
+    		get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'security'
+  		);
+
+  		// Allow delete for admins only
+  		allow delete: if request.auth != null &&
+    	get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+		}
+
+    // Rules for the 'qr_scan_logs' collection
+    match /qr_scan_logs/{logId} {
+      allow create: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'security' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+      allow read: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'resident' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'security' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+      allow update, delete: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Rules for the 'denied_entry_log' collection
+    match /denied_entry_log/{logId} {
+      allow create: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'security'
+      );
+      allow read: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'security' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'resident'
+      );
+      allow update, delete: if request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // New rules for the 'Latest_Accepted_Entry_Log' collection
+    match /latest_accepted_entry_log/{entryId} {
+      allow read: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'security' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+      allow create, update, delete: if request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // New rules for the 'latest_exit_log' collection
+    match /latest_exit_log/{entryId} {
+      allow read: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'security' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+      allow create, update, delete: if request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // New rules for the 'all_rfid_logs' collection
+    match /all_rfid_logs/{entryId} {
+      allow read: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'security' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+      allow create, update, delete: if request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+  }
+}
